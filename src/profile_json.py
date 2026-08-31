@@ -18,7 +18,35 @@ class JsonType(Enum):
     BOOL = "boolean"
     NULL = "null"
 
-def convertable_str_to_int(data: Any) -> bool:
+def convertible_str_to_bool(data: str) -> dict:
+    if not isinstance(data, str):
+        raise ValueError(f"expected a string but receive {type(data)}")
+
+    true_values =  {"true", "y", "t", "yes", "1"}
+    false_values = { "false", "n", "f", "no", 0}
+    normalized_string = data.strip().lower()
+
+    if normalized_string in true_values:
+        return {
+            "convertible_to_boolean": True,
+            "boolean_representation": True
+        }
+    
+    if normalized_string in false_values:
+        return {
+                "convertible_to_boolean": True,
+                "boolean_representation": False
+            }
+    
+    return {
+        "convertible_to_boolean": False,
+        "boolean_representation": None
+    }
+
+def convertable_str_to_int(data: str) -> bool:
+    if not isinstance(data, str):
+            raise ValueError(f"expected a string but receive {type(data)}")
+    
     try:
         int(data)
         return True
@@ -32,7 +60,10 @@ def convertable_str_to_float(data: Any) -> bool:
     except (ValueError, TypeError):
         return False
 
-def convertible_str_to_date(data: Any) -> dict: 
+def convertible_str_to_date(data: str) -> dict: 
+    if not isinstance(data, str):
+            raise ValueError(f"expected a string but receive {type(data)}")
+    
     common_format_strings =  [
         "%Y-%m-%d",
         "%m/%d/%Y",
@@ -46,7 +77,8 @@ def convertible_str_to_date(data: Any) -> dict:
         "%Y-%m-%dT%H:%M:%S",
         "%Y-%m-%dT%H:%M:%S.%f",
         "%m/%d/%Y %H:%M",
-        "%m/%d/%Y %I:%M %p"
+        "%m/%d/%Y %I:%M %p",
+        "%Y-%m-%dT%H:%M:%S%z"
     ]
 
     for format_string in common_format_strings:
@@ -101,6 +133,9 @@ def profile_string(data: str) -> dict:
 
     date_profile = convertible_str_to_date(data)
 
+    bool_profile = convertible_str_to_bool(data)
+
+    profile["source_value"] = data
     profile["type"] = JsonType.STRING.value
     profile["length"] = len(data)
     profile["is_whitespace_or_empty"] = not data.strip()
@@ -109,6 +144,7 @@ def profile_string(data: str) -> dict:
     profile["convertible_to_number"] = convertible
     profile["numeric_representation"] = converted_str
     profile.update(date_profile)
+    profile.update(bool_profile)
 
     return profile
 
@@ -118,6 +154,7 @@ def profile_number(data: int|float) -> dict:
      if map_object_type(data) != JsonType.NUMBER: 
           raise ValueError(f"Attempt to profile numeric on type {type(data)}")
 
+     profile["source_value"] = data
      profile["type"] = JsonType.NUMBER.value
      profile["python_type"] = type(data).__name__
      profile["value"] = data
@@ -130,20 +167,22 @@ def profile_bool(data: bool) -> dict:
     if map_object_type(data) != JsonType.BOOL: 
         raise ValueError(f"Attempt to profile boolean on type {type(data)}")
 
+    profile["source_value"] = data
     profile["type"] = JsonType.BOOL.value
     profile["value"] = data
 
     return profile
 
 def profile_null(data) -> dict:
-     profile = dict()
+    profile = dict()
 
-     if data is not None:
+    if data is not None:
         raise ValueError("Attempt to profile Null on Non-null value")
 
-     profile["type"] = JsonType.NULL.value
+    profile["source_value"] = data
+    profile["type"] = JsonType.NULL.value
 
-     return profile
+    return profile
 
 def profile_array(data: list, options: ProfileOptions) -> dict:
     profile = dict()
