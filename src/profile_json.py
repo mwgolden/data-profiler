@@ -184,7 +184,7 @@ def profile_null(data) -> dict:
 
     return profile
 
-def profile_array(data: list, options: ProfileOptions) -> dict:
+def profile_array(data: list, options: ProfileOptions, depth: int) -> dict:
     profile = dict()
     sample_count = max(1, math.floor(float(len(data)) * options.pct_sample)) if data else 0
     print(sample_count)
@@ -192,16 +192,16 @@ def profile_array(data: list, options: ProfileOptions) -> dict:
         raise ValueError(f"Attempt to profile array on type {type(data)}")
 
     profile["type"] = JsonType.ARRAY.value
-    profile["array_ocount"] = len(data)
+    profile["array_count"] = len(data)
     profile["sample_count"] = sample_count
 
     sample = random.sample(data, sample_count)
-    profile["items"] = [profile_data(item, options) for item in sample]
+    profile["items"] = [profile_data(item, options, depth) for item in sample]
 
     return profile
 
 
-def profile_object(data: dict, options: ProfileOptions) -> dict:
+def profile_object(data: dict, options: ProfileOptions, depth: int) -> dict:
     profile = dict()
 
     if map_object_type(data) != JsonType.OBJECT: 
@@ -209,20 +209,21 @@ def profile_object(data: dict, options: ProfileOptions) -> dict:
 
     profile["type"] = JsonType.OBJECT.value
     profile["keys"] = list(data.keys())
+    profile["depth"] = depth
 
     for key ,val in data.items():
-        profile[key] = profile_data(val, options)
+        profile[key] = profile_data(val, options, depth+1)
 
     return profile
 
 
-def profile_data(data: Any, pct_sample) -> dict:
+def profile_data(data: Any, options: ProfileOptions, depth: int) -> dict:
     json_type = map_object_type(data=data)
 
     if json_type == JsonType.OBJECT:
-        return profile_object(data, pct_sample)
+        return profile_object(data, options, depth)
     if json_type == JsonType.ARRAY:
-        return profile_array(data, pct_sample)
+        return profile_array(data, options, depth)
     if json_type == JsonType.STRING:
        return profile_string(data)
     if json_type == JsonType.NUMBER:
@@ -238,6 +239,6 @@ def profile_json(data: Any, options: ProfileOptions) -> dict:
     
     profile = dict()
     profile["type"] = map_object_type(data).value
-    profile["root"] = profile_data(data, options)
+    profile["root"] = profile_data(data, options, depth=0)
 
     return profile
