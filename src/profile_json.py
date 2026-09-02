@@ -116,11 +116,13 @@ def map_object_type(data: Any) -> JsonType:
 
     raise ValueError(f"type {type(data)} is not convertible to JSON type")
 
-def profile_string(data: str) -> dict:
+def profile_string(data: str, cur, path) -> dict:
     profile = dict()
 
     if map_object_type(data) != JsonType.STRING:
          raise ValueError(f"Attempt to profile string on type {type(data)}")
+
+    obj_path = path + "." + cur
 
     convertible = False
     converted_str = None
@@ -145,93 +147,114 @@ def profile_string(data: str) -> dict:
     profile["numeric_representation"] = converted_str
     profile.update(date_profile)
     profile.update(bool_profile)
+    profile["path"] = obj_path
+    profile["parent_path"] = path
 
     return profile
 
-def profile_number(data: int|float) -> dict:
-     profile = dict()
+def profile_number(data: int|float, cur, path) -> dict:
+    profile = dict()
 
-     if map_object_type(data) != JsonType.NUMBER: 
-          raise ValueError(f"Attempt to profile numeric on type {type(data)}")
+    if map_object_type(data) != JsonType.NUMBER: 
+        raise ValueError(f"Attempt to profile numeric on type {type(data)}")
 
-     profile["source_value"] = data
-     profile["type"] = JsonType.NUMBER.value
-     profile["python_type"] = type(data).__name__
-     profile["value"] = data
+    obj_path = path + "." + cur
 
-     return profile
+    profile["source_value"] = data
+    profile["type"] = JsonType.NUMBER.value
+    profile["python_type"] = type(data).__name__
+    profile["value"] = data
+    profile["path"] = obj_path
+    profile["parent_path"] = path
 
-def profile_bool(data: bool) -> dict:
+    return profile
+
+def profile_bool(data: bool, cur, path) -> dict:
     profile = dict()
 
     if map_object_type(data) != JsonType.BOOL: 
         raise ValueError(f"Attempt to profile boolean on type {type(data)}")
 
+    obj_path = path + "." + cur
+
     profile["source_value"] = data
     profile["type"] = JsonType.BOOL.value
     profile["value"] = data
+    profile["path"] = obj_path
+    profile["parent_path"] = path
 
     return profile
 
-def profile_null(data) -> dict:
+def profile_null(data, cur, path) -> dict:
     profile = dict()
 
     if data is not None:
         raise ValueError("Attempt to profile Null on Non-null value")
 
+    obj_path = path + "." + cur
+
     profile["source_value"] = data
     profile["type"] = JsonType.NULL.value
+    profile["path"] = obj_path
+    profile["parent_path"] = path
 
     return profile
 
-def profile_array(data: list, options: ProfileOptions, depth: int) -> dict:
+def profile_array(data: list, options: ProfileOptions, depth: int, cur: str, path: str) -> dict:
     profile = dict()
     sample_count = max(1, math.floor(float(len(data)) * options.pct_sample)) if data else 0
-    print(sample_count)
+
     if map_object_type(data) != JsonType.ARRAY: 
         raise ValueError(f"Attempt to profile array on type {type(data)}")
+
+    obj_path = path + "." + cur + "[*]"
 
     profile["type"] = JsonType.ARRAY.value
     profile["array_count"] = len(data)
     profile["sample_count"] = sample_count
+    profile["parent_path"] = path
 
     sample = random.sample(data, sample_count)
-    profile["items"] = [profile_data(item, options, depth) for item in sample]
+    profile["items"] = [profile_data(item, options, depth, None, obj_path) for item in sample]
 
     return profile
 
 
-def profile_object(data: dict, options: ProfileOptions, depth: int) -> dict:
+def profile_object(data: dict, options: ProfileOptions, depth: int, cur: str|None, path: str) -> dict:
     profile = dict()
 
     if map_object_type(data) != JsonType.OBJECT: 
         raise ValueError(f"Attempt to profile object on type {type(data)}")
 
+    obj_path = path + "." + cur if cur else path
+
     profile["type"] = JsonType.OBJECT.value
     profile["keys"] = list(data.keys())
     profile["depth"] = depth
+    profile["parent_path"] = path
+    profile["path"] = obj_path
 
     for key ,val in data.items():
-        profile[key] = profile_data(val, options, depth+1)
+        profile[key] = profile_data(val, options, depth+1, cur=key, path=obj_path)
 
     return profile
 
 
-def profile_data(data: Any, options: ProfileOptions, depth: int) -> dict:
+def profile_data(data: Any, options: ProfileOptions, depth: int, cur: str, path: str) -> dict:
     json_type = map_object_type(data=data)
 
     if json_type == JsonType.OBJECT:
-        return profile_object(data, options, depth)
+        return profile_object(data, options, depth, cur, path)
     if json_type == JsonType.ARRAY:
-        return profile_array(data, options, depth)
+        return profile_array(data, options, depth, cur, path)
     if json_type == JsonType.STRING:
-       return profile_string(data)
+       return profile_string(data, cur, path)
     if json_type == JsonType.NUMBER:
-        return profile_number(data)
+        return profile_number(data, cur, path)
     if json_type == JsonType.BOOL:
-        return profile_bool(data)
+        return profile_bool(data, cur, path)
     if json_type == JsonType.NULL:
-        return profile_null(data)
+        return profile_null(data, cur, path)
 
 def profile_json(data: Any, options: ProfileOptions) -> dict:
     if options.pct_sample <= 0.0 or options.pct_sample > 1.0:
@@ -239,6 +262,6 @@ def profile_json(data: Any, options: ProfileOptions) -> dict:
     
     profile = dict()
     profile["type"] = map_object_type(data).value
-    profile["root"] = profile_data(data, options, depth=0)
+    profile["root"] = profile_data(data, options, depth=0, cur="root", path="$")
 
     return profile
