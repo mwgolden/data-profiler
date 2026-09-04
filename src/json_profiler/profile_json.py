@@ -128,10 +128,11 @@ def profile_string(key: str, data: str, node: JsonNode) -> JsonNode:
 
     return JsonNode(
         json_type=JsonType.STRING,
+        source_key=key,
         path=obj_path,
         parent_path=parent_path,
         source_value=data,
-        length=len(data),
+        str_length=len(data),
         is_whitespace_or_empty=not data.strip(),
         has_leading_whitespace=data != data.lstrip(),
         has_trailing_whitespace=data != data.rstrip(),
@@ -153,6 +154,7 @@ def profile_number(key: str, data: int|float, node: JsonNode) -> JsonNode:
 
     return JsonNode(
         json_type=JsonType.NUMBER,
+        source_key=key,
         source_value=data,
         python_datatype=type(data).__name__,
         path=obj_path,
@@ -168,6 +170,7 @@ def profile_bool(key: str, data: bool, node: JsonNode) -> JsonNode:
 
     return JsonNode(
         json_type=JsonType.BOOL,
+        source_key=key,
         source_value=data,
         python_datatype=type(data).__name__,
         parent_path=parent_path,
@@ -183,6 +186,7 @@ def profile_null(key: str, data, node: JsonNode) -> JsonNode:
 
     return JsonNode(
         json_type=JsonType.NULL,
+        source_key=key,
         source_value=data,
         path=obj_path,
         parent_path=parent_path
@@ -202,8 +206,9 @@ def profile_array(key: str, data: list, options: ProfileOptions, node: JsonNode)
 
     profile = JsonNode(
         json_type=JsonType.ARRAY,
-        array_count=len(data),
-        sample_count=sample_count,
+        source_key=key,
+        array_length=len(data),
+        sample_array_length=sample_count,
         parent_path=parent_path,
         path=obj_path,
         depth=obj_depth
@@ -221,9 +226,10 @@ def profile_object(key: str, data: dict, options: ProfileOptions, node: JsonNode
     parent_path = node.path
     obj_path = node.path + "." + key if key else node.path
     obj_depth = node.depth + 1
-    
+        
     profile = JsonNode(
         json_type=JsonType.OBJECT,
+        source_key=key,
         keys=list(data.keys()),
         depth=obj_depth,
         parent_path=parent_path,
@@ -260,6 +266,7 @@ def profile_json(data: Any, options: ProfileOptions) -> JsonNode:
         path="$",
         depth=0
     )
-    profile.children = [profile_data(key="root", val=data, options=options, node=profile)]
+    
+    profile.children = [profile_data(key, val, options, profile) for key, val in data.items()]
 
     return profile
