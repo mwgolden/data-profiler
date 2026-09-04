@@ -232,8 +232,6 @@ def profile_object(key: str, data: dict, options: ProfileOptions, node: JsonNode
 
     profile.children = [profile_data(key, val, options, profile) for key, val in data.items()]
 
-    # TODO: Is the object name in here? 
-
     return profile
 
 
