@@ -1,10 +1,9 @@
 import random
 import math
-from enum import Enum
 from typing import Any
 from dataclasses import dataclass
 from datetime import datetime
-from .enums import JsonType
+from .enums import JsonType, map_object_type
 from .models import ProfileOptions, JsonNode
 
 
@@ -88,30 +87,19 @@ def convertible_str_to_date(data: str) -> dict:
         "date_representation": None
     }
 
-
-
-def map_object_type(data: Any) -> JsonType:
-    if isinstance(data, dict):
-        return JsonType.OBJECT
-    if isinstance(data, list):
-        return JsonType.ARRAY
-    if isinstance(data, str):
-        return JsonType.STRING
-    if isinstance(data, bool):
-        return JsonType.BOOL
-    if isinstance(data, (int, float)):
-        return JsonType.NUMBER
-    if data is None:
-        return JsonType.NULL
-
-    raise ValueError(f"type {type(data)} is not convertible to JSON type")
-
-def profile_string(key: str, data: str, node: JsonNode) -> JsonNode:
+def profile_string(key: str, data: str, node: JsonNode, source_array_index: int | None) -> JsonNode:
     if map_object_type(data) != JsonType.STRING:
          raise ValueError(f"Attempt to profile string on type {type(data)}")
 
     parent_path = node.path
-    obj_path = node.path + "." + key
+    obj_path = node.path + "." + key if key else node.path
+
+    instance_path = obj_path
+    instance_parent_path = parent_path
+    if source_array_index:
+        instance_path = obj_path.replace("[*]", f"[{source_array_index}]")
+        instance_parent_path = parent_path.replace("[*]", f"[{source_array_index}]")
+
 
     convertible = False
     converted_str = None
@@ -131,6 +119,8 @@ def profile_string(key: str, data: str, node: JsonNode) -> JsonNode:
         source_key=key,
         path=obj_path,
         parent_path=parent_path,
+        instance_path=instance_path,
+        instance_parent_path=instance_parent_path,
         source_value=data,
         str_length=len(data),
         is_whitespace_or_empty=not data.strip(),
@@ -145,12 +135,18 @@ def profile_string(key: str, data: str, node: JsonNode) -> JsonNode:
         boolean_representation=bool_profile.get("boolean_representation")
     )
 
-def profile_number(key: str, data: int|float, node: JsonNode) -> JsonNode:
+def profile_number(key: str, data: int|float, node: JsonNode, source_array_index: int | None) -> JsonNode:
     if map_object_type(data) != JsonType.NUMBER: 
         raise ValueError(f"Attempt to profile numeric on type {type(data)}")
 
     parent_path = node.path
-    obj_path = node.path + "." + key
+    obj_path = node.path + "." + key if key else node.path
+
+    instance_path = obj_path
+    instance_parent_path = parent_path
+    if source_array_index:
+        instance_path = obj_path.replace("[*]", f"[{source_array_index}]")
+        instance_parent_path = parent_path.replace("[*]", f"[{source_array_index}]")
 
     return JsonNode(
         json_type=JsonType.NUMBER,
@@ -158,15 +154,23 @@ def profile_number(key: str, data: int|float, node: JsonNode) -> JsonNode:
         source_value=data,
         python_datatype=type(data).__name__,
         path=obj_path,
-        parent_path=parent_path
+        parent_path=parent_path,
+        instance_path=instance_path,
+        instance_parent_path=instance_parent_path
     )
 
-def profile_bool(key: str, data: bool, node: JsonNode) -> JsonNode:
+def profile_bool(key: str, data: bool, node: JsonNode, source_array_index: int | None) -> JsonNode:
     if map_object_type(data) != JsonType.BOOL: 
         raise ValueError(f"Attempt to profile boolean on type {type(data)}")
 
     parent_path = node.path
-    obj_path = node.path + "." + key
+    obj_path = node.path + "." + key if key else node.path
+
+    instance_path = obj_path
+    instance_parent_path = parent_path
+    if source_array_index:
+        instance_path = obj_path.replace("[*]", f"[{source_array_index}]")
+        instance_parent_path = parent_path.replace("[*]", f"[{source_array_index}]")
 
     return JsonNode(
         json_type=JsonType.BOOL,
@@ -174,22 +178,32 @@ def profile_bool(key: str, data: bool, node: JsonNode) -> JsonNode:
         source_value=data,
         python_datatype=type(data).__name__,
         parent_path=parent_path,
-        path=obj_path
+        path=obj_path,
+        instance_path=instance_path,
+        instance_parent_path=instance_parent_path
     )
 
-def profile_null(key: str, data, node: JsonNode) -> JsonNode:
+def profile_null(key: str, data, node: JsonNode, source_array_index: int | None) -> JsonNode:
     if data is not None:
         raise ValueError("Attempt to profile Null on Non-null value")
 
     parent_path = node.path
-    obj_path = node.path + "." + key
+    obj_path = node.path + "." + key if key else node.path
+
+    instance_path = obj_path
+    instance_parent_path = parent_path
+    if source_array_index:
+        instance_path = obj_path.replace("[*]", f"[{source_array_index}]")
+        instance_parent_path = parent_path.replace("[*]", f"[{source_array_index}]")
 
     return JsonNode(
         json_type=JsonType.NULL,
         source_key=key,
         source_value=data,
         path=obj_path,
-        parent_path=parent_path
+        parent_path=parent_path,
+        instance_path=instance_path,
+        instance_parent_path=instance_parent_path
     )
 
 def profile_array(key: str, data: list, options: ProfileOptions, node: JsonNode) -> JsonNode:
@@ -202,7 +216,10 @@ def profile_array(key: str, data: list, options: ProfileOptions, node: JsonNode)
     obj_path = node.path + "." + key + "[*]"
     obj_depth = node.depth # arrays inherit the current depth; using object nesting depth instead of generic tree depth
 
-    sample = random.sample(data, sample_count)
+    instance_path = obj_path
+    instance_parent_path = parent_path
+
+    sample_indexes = random.sample(range(len(data)), sample_count)
 
     profile = JsonNode(
         json_type=JsonType.ARRAY,
@@ -211,21 +228,38 @@ def profile_array(key: str, data: list, options: ProfileOptions, node: JsonNode)
         sample_array_length=sample_count,
         parent_path=parent_path,
         path=obj_path,
-        depth=obj_depth
+        depth=obj_depth,
+        instance_path=instance_path,
+        instance_parent_path=instance_parent_path
     )
 
-    profile.children = [profile_data(key=None, val=item, options=options, node=profile) for item in sample]
+    profile.children = [
+            profile_data(
+                key=None, 
+                val=data[source_index], 
+                options=options, 
+                node=profile, 
+                source_array_index=source_index
+            ) 
+            for source_index in sample_indexes
+        ]
 
     return profile
 
 
-def profile_object(key: str, data: dict, options: ProfileOptions, node: JsonNode) -> JsonNode:
+def profile_object(key: str, data: dict, options: ProfileOptions, node: JsonNode, source_array_index: int | None) -> JsonNode:
     if map_object_type(data) != JsonType.OBJECT: 
         raise ValueError(f"Attempt to profile object on type {type(data)}")
 
     parent_path = node.path
     obj_path = node.path + "." + key if key else node.path
     obj_depth = node.depth + 1
+
+    instance_path = obj_path
+    instance_parent_path = parent_path
+    if source_array_index:
+        instance_path = obj_path.replace("[*]", f"[{source_array_index}]")
+        instance_parent_path = parent_path.replace("[*]", f"[{source_array_index}]")
         
     profile = JsonNode(
         json_type=JsonType.OBJECT,
@@ -233,29 +267,31 @@ def profile_object(key: str, data: dict, options: ProfileOptions, node: JsonNode
         keys=list(data.keys()),
         depth=obj_depth,
         parent_path=parent_path,
-        path=obj_path
+        path=obj_path,
+        instance_path=instance_path,
+        instance_parent_path=instance_parent_path
     )
 
-    profile.children = [profile_data(key, val, options, profile) for key, val in data.items()]
+    profile.children = [profile_data(key, val, options, profile, source_array_index=source_array_index) for key, val in data.items()]
 
     return profile
 
 
-def profile_data(key: str, val: Any, options: ProfileOptions, node: JsonNode) -> JsonNode:
+def profile_data(key: str, val: Any, options: ProfileOptions, node: JsonNode, source_array_index: int | None) -> JsonNode:
     json_type = map_object_type(data=val)
 
     if json_type == JsonType.OBJECT:
-        return profile_object(key, val, options, node)
+        return profile_object(key, val, options, node, source_array_index)
     if json_type == JsonType.ARRAY:
         return profile_array(key, val, options, node)
     if json_type == JsonType.STRING:
-       return profile_string(key, val, node)
+       return profile_string(key, val, node, source_array_index)
     if json_type == JsonType.NUMBER:
-        return profile_number(key, val, node)
+        return profile_number(key, val, node, source_array_index)
     if json_type == JsonType.BOOL:
-        return profile_bool(key, val, node)
+        return profile_bool(key, val, node, source_array_index)
     if json_type == JsonType.NULL:
-        return profile_null(key, val, node)
+        return profile_null(key, val, node, source_array_index)
 
 def profile_json(data: Any, options: ProfileOptions) -> JsonNode:
     if options.pct_sample <= 0.0 or options.pct_sample > 1.0:
@@ -266,7 +302,11 @@ def profile_json(data: Any, options: ProfileOptions) -> JsonNode:
         path="$",
         depth=0
     )
-    
-    profile.children = [profile_data(key, val, options, profile) for key, val in data.items()]
+
+    if map_object_type(data) == JsonType.OBJECT:
+        profile.children = [profile_data(key, val, options, profile, source_array_index=None) for key, val in data.items()]
+
+    if map_object_type(data) == JsonType.ARRAY:
+        profile.children = [profile_data("", data, options, profile, source_array_index=None)]
 
     return profile

@@ -16,6 +16,8 @@ class JsonNode:
     python_datatype: str|None = None
     path: str|None = None
     parent_path: str|None = None
+    instance_parent_path: int|None = None
+    instance_path: int|None = None
     children: list["JsonNode"] = field(default_factory=list["JsonNode"])
 
     # string attributes
@@ -51,8 +53,8 @@ class JsonNode:
             d["depth"] = self.depth
 
         if self.json_type == JsonType.ARRAY:
-            d["array_length"] = self.array_count
-            d["sample_array_length"] = self.sample_count
+            d["array_length"] = self.array_length
+            d["sample_array_length"] = self.sample_array_length
 
         if self.json_type == JsonType.STRING:
             d["str_length"] = self.str_length
@@ -74,3 +76,38 @@ class JsonNode:
                 d[child.source_key] = child.to_dict()
 
         return d
+
+    def explode(self) -> list[dict]:
+        exploded_tree = []
+
+        def visit_node(node: JsonNode):           
+            d = dict()
+            d["json_type"] = node.json_type.value
+            d["source_value"] = node.source_value
+            d["python_datatype"] = node.python_datatype
+            d["parent_path"] = node.parent_path
+            d["path"] = node.path
+            d["instance_path"] = node.instance_path
+            d["instance_parent_path"] = node.instance_parent_path
+            d["keys"] = node.keys
+            d["depth"] = node.depth
+            d["array_length"] = node.array_length
+            d["sample_array_length"] = node.sample_array_length
+            d["str_length"] = node.str_length
+            d["is_whitespace_or_empty"] = node.is_whitespace_or_empty
+            d["has_leading_whitespace"] = node.has_leading_whitespace
+            d["has_trailing_whitespace"] = node.has_trailing_whitespace
+            d["convertible_to_number"] = node.convertible_to_number
+            d["numeric_representation"] = node.numeric_representation
+            d["convertible_to_date"] = node.convertible_to_date
+            d["date_format_string"] = node.date_format_string
+            d["date_representation"] = node.date_representation
+            d["convertible_to_boolean"] = node.convertible_to_boolean
+            d["boolean_representation"] = node.boolean_representation
+            
+            exploded_tree.append(d)
+            for child in node.children:
+                visit_node(child)
+
+        visit_node(self)
+        return  exploded_tree
