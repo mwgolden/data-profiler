@@ -87,6 +87,17 @@ def convertible_str_to_date(data: str) -> dict:
         "date_representation": None
     }
 
+def scalar_instance_paths(key: str, node: JsonNode, source_array_index: int|None) -> tuple[str, str]:
+    instance_path = f"{node.instance_path}.{key}" if key else node.instance_path
+    instance_parent_path = node.instance_path
+    
+    if source_array_index is not None:
+        index = f"[{source_array_index}]"
+        instance_path = instance_path.replace("[*]", index)
+        instance_parent_path = instance_parent_path.replace("[*]", index)
+
+    return instance_path, instance_parent_path
+
 def profile_string(key: str, data: str, node: JsonNode, source_array_index: int | None) -> JsonNode:
     if map_object_type(data) != JsonType.STRING:
          raise ValueError(f"Attempt to profile string on type {type(data)}")
@@ -94,12 +105,7 @@ def profile_string(key: str, data: str, node: JsonNode, source_array_index: int 
     parent_path = node.path
     obj_path = node.path + "." + key if key else node.path
 
-    instance_path = obj_path
-    instance_parent_path = parent_path
-    if source_array_index:
-        instance_path = obj_path.replace("[*]", f"[{source_array_index}]")
-        instance_parent_path = parent_path.replace("[*]", f"[{source_array_index}]")
-
+    instance_path, instance_parent_path = scalar_instance_paths(key, node, source_array_index)
 
     convertible = False
     converted_str = None
@@ -142,11 +148,7 @@ def profile_number(key: str, data: int|float, node: JsonNode, source_array_index
     parent_path = node.path
     obj_path = node.path + "." + key if key else node.path
 
-    instance_path = obj_path
-    instance_parent_path = parent_path
-    if source_array_index:
-        instance_path = obj_path.replace("[*]", f"[{source_array_index}]")
-        instance_parent_path = parent_path.replace("[*]", f"[{source_array_index}]")
+    instance_path, instance_parent_path = scalar_instance_paths(key, node, source_array_index)
 
     return JsonNode(
         json_type=JsonType.NUMBER,
@@ -166,11 +168,7 @@ def profile_bool(key: str, data: bool, node: JsonNode, source_array_index: int |
     parent_path = node.path
     obj_path = node.path + "." + key if key else node.path
 
-    instance_path = obj_path
-    instance_parent_path = parent_path
-    if source_array_index:
-        instance_path = obj_path.replace("[*]", f"[{source_array_index}]")
-        instance_parent_path = parent_path.replace("[*]", f"[{source_array_index}]")
+    instance_path, instance_parent_path = scalar_instance_paths(key, node, source_array_index)
 
     return JsonNode(
         json_type=JsonType.BOOL,
@@ -190,11 +188,7 @@ def profile_null(key: str, data, node: JsonNode, source_array_index: int | None)
     parent_path = node.path
     obj_path = node.path + "." + key if key else node.path
 
-    instance_path = obj_path
-    instance_parent_path = parent_path
-    if source_array_index:
-        instance_path = obj_path.replace("[*]", f"[{source_array_index}]")
-        instance_parent_path = parent_path.replace("[*]", f"[{source_array_index}]")
+    instance_path, instance_parent_path = scalar_instance_paths(key, node, source_array_index)
 
     return JsonNode(
         json_type=JsonType.NULL,
@@ -214,10 +208,16 @@ def profile_array(key: str, data: list, options: ProfileOptions, node: JsonNode)
 
     parent_path = node.path
     obj_path = node.path + "." + key + "[*]"
-    obj_depth = node.depth # arrays inherit the current depth; using object nesting depth instead of generic tree depth
 
-    instance_path = obj_path
-    instance_parent_path = parent_path
+    instance_path = (
+        node.instance_path + "." + key + "[*]"
+        if node.instance_path
+        else obj_path
+    )
+
+    instance_parent_path = node.instance_path
+
+    obj_depth = node.depth # arrays inherit the current depth; using object nesting depth instead of generic tree depth
 
     sample_indexes = random.sample(range(len(data)), sample_count)
 
@@ -241,7 +241,7 @@ def profile_array(key: str, data: list, options: ProfileOptions, node: JsonNode)
                 node=profile, 
                 source_array_index=source_index
             ) 
-            for source_index in sample_indexes
+            for source_index in sorted(sample_indexes)
         ]
 
     return profile
@@ -255,11 +255,21 @@ def profile_object(key: str, data: dict, options: ProfileOptions, node: JsonNode
     obj_path = node.path + "." + key if key else node.path
     obj_depth = node.depth + 1
 
-    instance_path = obj_path
-    instance_parent_path = parent_path
-    if source_array_index:
-        instance_path = obj_path.replace("[*]", f"[{source_array_index}]")
-        instance_parent_path = parent_path.replace("[*]", f"[{source_array_index}]")
+    if source_array_index is not None:
+        # This is an element of an array
+        instance_path = node.instance_path.replace(
+            "[*]",
+            f"[{source_array_index}]"
+        )
+        instance_parent_path = node.instance_path
+    else:
+        # This object is a child of another object
+        instance_path = (
+            node.instance_path + "." + key
+            if node.instance_path and key
+            else obj_path
+        )
+        instance_parent_path = node.instance_path
         
     profile = JsonNode(
         json_type=JsonType.OBJECT,
