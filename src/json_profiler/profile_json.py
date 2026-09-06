@@ -1,7 +1,4 @@
-import random
-import math
 from typing import Any
-from dataclasses import dataclass
 from datetime import datetime
 from .enums import JsonType, map_object_type
 from .models import ProfileOptions, JsonNode
@@ -201,7 +198,6 @@ def profile_null(key: str, data, node: JsonNode, source_array_index: int | None)
     )
 
 def profile_array(key: str, data: list, options: ProfileOptions, node: JsonNode) -> JsonNode:
-    sample_count = max(1, math.floor(float(len(data)) * options.pct_sample)) if data else 0
 
     if map_object_type(data) != JsonType.ARRAY: 
         raise ValueError(f"Attempt to profile array on type {type(data)}")
@@ -219,13 +215,13 @@ def profile_array(key: str, data: list, options: ProfileOptions, node: JsonNode)
 
     obj_depth = node.depth # arrays inherit the current depth; using object nesting depth instead of generic tree depth
 
-    sample_indexes = random.sample(range(len(data)), sample_count)
+    sample_indexes = options.sampling_strategy.sample_indices(size=len(data), pct_sample=1.0)
 
     profile = JsonNode(
         json_type=JsonType.ARRAY,
         source_key=key,
         array_length=len(data),
-        sample_array_length=sample_count,
+        sample_array_length=len(sample_indexes),
         parent_path=parent_path,
         path=obj_path,
         depth=obj_depth,
@@ -304,8 +300,6 @@ def profile_data(key: str, val: Any, options: ProfileOptions, node: JsonNode, so
         return profile_null(key, val, node, source_array_index)
 
 def profile_json(data: Any, options: ProfileOptions) -> JsonNode:
-    if options.pct_sample <= 0.0 or options.pct_sample > 1.0:
-        raise ValueError(f"pct_sample must be in range (0.0, 1.0]. {options.pct_sample} provided")
 
     profile = JsonNode(
         json_type=JsonType.ROOT,

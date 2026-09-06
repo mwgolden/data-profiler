@@ -1,11 +1,13 @@
 from dataclasses import dataclass, field, fields
 from .enums import JsonType
+from .sampling import SamplingStrategy, RandomSample
 from typing import Any
 
 @dataclass
 class ProfileOptions:
-    pct_sample: float = 1.0
-
+    sampling_strategy: SamplingStrategy = field(
+        default_factory=RandomSample
+    )
 
 @dataclass
 class JsonNode:
