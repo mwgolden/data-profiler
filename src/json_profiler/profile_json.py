@@ -215,7 +215,9 @@ def profile_array(key: str, data: list, options: ProfileOptions, node: JsonNode)
 
     obj_depth = node.depth # arrays inherit the current depth; using object nesting depth instead of generic tree depth
 
-    sample_indexes = options.sampling_strategy.sample_indices(size=len(data), pct_sample=1.0)
+    sampling_strategy = options.sampling_options.sampling_strategy
+
+    sample_indexes = sampling_strategy.sample(size=len(data))
 
     profile = JsonNode(
         json_type=JsonType.ARRAY,

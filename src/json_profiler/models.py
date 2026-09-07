@@ -1,12 +1,16 @@
 from dataclasses import dataclass, field, fields
 from .enums import JsonType
-from .sampling import SamplingStrategy, RandomSample
+from .sampling import SamplingStrategy
 from typing import Any
 
 @dataclass
+class SamplingConfig:
+    sampling_strategy: SamplingStrategy
+
+@dataclass
 class ProfileOptions:
-    sampling_strategy: SamplingStrategy = field(
-        default_factory=RandomSample
+    sampling_options: SamplingConfig = field(
+        default_factory=SamplingConfig
     )
 
 @dataclass
