@@ -29,8 +29,11 @@ class RandomSample:
             Raises:
                 ValueError: If sample_pct is outside range (0.0: 1.0]
         """
-        if self.sample_pct <= 0.0 or self.sample_pct > 1.0:
+        if self.sample_pct < 0.0 or self.sample_pct > 1.0:
             raise ValueError(f"sample_pct must be in range (0.0, 1.0]. {self.sample_pct} provided")
+
+        if size <= 0:
+            return []
 
         rng = random.Random(self.seed)
 
