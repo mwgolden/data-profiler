@@ -24,7 +24,7 @@ def json_profiler(args: argparse.Namespace):
         with_replacement=args.with_replacement,
         seed=args.seed
     )
-    
+
     sampling_config = SamplingConfig(
         sampling_strategy=random_sampling
     )
@@ -41,6 +41,7 @@ def json_profiler(args: argparse.Namespace):
 
     profile = profile_json(raw_data,options)
 
+    output_path.mkdir(parents=True, exist_ok=True)
     with open(output_path / "profile.json", 'w') as f:
         json.dump(profile.to_dict(), f, indent=4)
 
