@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, fields
 from .enums import JsonType
-from .sampling import SamplingStrategy
+from ..sampling.strategy import SamplingStrategy
 from typing import Any
 
 @dataclass
