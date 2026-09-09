@@ -45,7 +45,7 @@ class JsonNode:
 
     # object attributes
     keys: list[str]|None = None
-    depth: int|None = None
+    object_depth: int|None = None
 
     def to_dict(self):
         d = dict()
@@ -56,7 +56,7 @@ class JsonNode:
 
         if self.json_type == JsonType.OBJECT:
             d["keys"] = self.keys
-            d["depth"] = self.depth
+            d["object_depth"] = self.object_depth
 
         if self.json_type == JsonType.ARRAY:
             d["array_length"] = self.array_length
@@ -96,7 +96,7 @@ class JsonNode:
             d["instance_path"] = node.instance_path
             d["instance_parent_path"] = node.instance_parent_path
             d["keys"] = node.keys
-            d["depth"] = node.depth
+            d["object_depth"] = node.object_depth
             d["array_length"] = node.array_length
             d["sample_array_length"] = node.sample_array_length
             d["str_length"] = node.str_length
