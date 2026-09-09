@@ -52,7 +52,7 @@ class JsonNode:
         d["json_type"] = self.json_type.value
         d["source_value"] = self.source_value
         d["python_datatype"] = self.python_datatype
-        d["path"] = self.path
+        d["path"] = self.path.replace("[*]", "") if self.json_type == JsonType.ARRAY else self.path
 
         if self.json_type == JsonType.OBJECT:
             d["keys"] = self.keys
@@ -92,7 +92,7 @@ class JsonNode:
             d["source_value"] = node.source_value
             d["python_datatype"] = node.python_datatype
             d["parent_path"] = node.parent_path
-            d["path"] = node.path
+            d["path"] = node.path.replace("[*]", "") if node.json_type == JsonType.ARRAY else node.path
             d["instance_path"] = node.instance_path
             d["instance_parent_path"] = node.instance_parent_path
             d["keys"] = node.keys
