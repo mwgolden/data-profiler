@@ -125,6 +125,7 @@ def profile_string(key: str, data: str, node: JsonNode, source_array_index: int 
         instance_path=instance_path,
         instance_parent_path=instance_parent_path,
         source_value=data,
+        python_datatype=type(data).__name__,
         str_length=len(data),
         is_whitespace_or_empty=not data.strip(),
         has_leading_whitespace=data != data.lstrip(),
@@ -259,6 +260,7 @@ def profile_object(key: str, data: dict, options: ProfileOptions, node: JsonNode
             "[*]",
             f"[{source_array_index}]"
         )
+        instance_path = instance_path + "." + key if key else instance_path
         instance_parent_path = node.instance_path
     else:
         # This object is a child of another object
