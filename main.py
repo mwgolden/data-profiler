@@ -2,11 +2,12 @@ from pathlib import Path
 import json
 import pandas as pd
 from report.json_report import generate_report
+import os
 
 #raw_path = Path(Path.cwd() / "data" / "raw" /"food-enforcement-0001-of-0001.json")
 #raw_path = Path(Path.cwd() / "data" / "raw" /"address.json")
 raw_path = Path(Path.cwd() / "data" / "raw" / "0_1qgyjdg.json")
-
+file_name = os.path.basename(raw_path)
 
 with open(raw_path, 'r') as f:
     raw_data = json.load(f)
@@ -31,4 +32,4 @@ exploded = profile.explode()
 df = pd.DataFrame(exploded)
 df.to_csv("./output/exploded_json.csv", index=False)
 
-generate_report(df)
+generate_report(df, file_name)
