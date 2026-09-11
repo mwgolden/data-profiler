@@ -8,6 +8,7 @@ from pathlib import Path
 from .sql_queries import report_queries as q
 from typing import Hashable, Any
 
+env = Environment(loader=FileSystemLoader(Path.cwd() / "src" / "report" /  "templates"))
 
 @dataclass
 class Table:
@@ -43,11 +44,10 @@ def format_table(df: pd.DataFrame) -> pd.DataFrame:
     return display_df
 
 def pct_bar(pct: float) -> str:
-    return f"""
-    <div class="pct-bar">
-        <div class="pct-bar-fill" style="width: {pct}%"></div>
-    </div>
-    """
+    template = env.get_template("pct_bar.html")
+    return template.render(
+        pct=pct
+    )
 
 def generate_report(df: pd.DataFrame):
 
@@ -81,8 +81,6 @@ def generate_report(df: pd.DataFrame):
         source_file="??",
         tables=tables
     )
-
-    env = Environment(loader=FileSystemLoader(Path.cwd() / "src" / "report" /  "templates"))
 
     template = env.get_template("report.html")
 
