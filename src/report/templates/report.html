@@ -46,15 +46,46 @@
             border-radius: 4px;
         }
 
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .summary-card-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 8px;
+        }
+
+        .summary-card-value {
+            font-size: 1.75rem;
+            font-weight: 600;
+        }
+
+
     </style>
 </head>
 
 <body>
 <div class="report-header">
     <h1>{{ report.title }}</h1>
-    <p>Source: {{ report.source_file }}</p>
+    <p>Source File: {{ report.source_file }}</p>
 </div>
 <div class="report-container">
+    <section class="summary-cards">
+        {% for card in report.summary.summaries %}
+            {% include "summary_card.html" with context %}
+        {% endfor %}
+    </section>
     {% from "table.html" import render_table %}
     {% for table in report.tables %}
     <section class="table-section">
