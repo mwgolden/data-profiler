@@ -1,0 +1,24 @@
+{% macro render_table(title, headers, rows) %}
+<div class="table-responsive">
+    <h2 class="mt-4 mb-3">{{ title }}</h2>
+    <table class="table table-sm table-striped table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                {% for header in headers %}
+                    <th scope="col">{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for row in rows %}
+                <tr>
+                    {% for header in headers %}
+                        <td>{{ row[header] }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
