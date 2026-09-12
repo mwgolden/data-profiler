@@ -32,5 +32,16 @@ report_queries = {
     "path_distribution": """select json_type, count(distinct path) as distinct_paths
                             from df 
                             where json_type != 'root'
-                            group by json_type;"""
+                            group by json_type;""",
+    "array_path_count": """select count(distinct path) as array_path_count
+                            from df
+                            where instance_path != path and parent_path = path;""",
+    "array_paths": """select 
+                        path, json_depth,
+                        count(distinct instance_path) as element_count
+                        from df
+                        where instance_path != path and parent_path = path
+                        group by path,json_depth
+                        order by json_depth;""",
+    "max_depth": """select max(json_depth) as max_depth from df;"""
 }

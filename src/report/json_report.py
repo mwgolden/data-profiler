@@ -35,7 +35,9 @@ class Report:
     title: str
     source_file: str
     summary: Summary
-    tables: list[Table]
+    object_path_table: Table
+    array_path_table: Table
+    object_coverage_tables: list[Table]
 
 
 def create_summary(df: pd.DataFrame) -> Summary:
@@ -47,11 +49,17 @@ def create_summary(df: pd.DataFrame) -> Summary:
 
     distinct_keys = duckdb.sql(q["distinct_keys"]).fetchone()[0]
 
+    array_path_count = duckdb.sql(q["array_path_count"]).fetchone()[0]
+
+    max_depth = duckdb.sql(q["max_depth"]).fetchone()[0]
+
     summary = Summary([
         SummaryCard(label="Root Type", value=root_type.title()),
         SummaryCard(label="Object Count", value=object_instance_count),
         SummaryCard(label="Object Paths", value=distinct_object_path_count),
-        SummaryCard(label="Distinct Keys", value=distinct_keys)
+        SummaryCard(label="Distinct Keys", value=distinct_keys),
+        SummaryCard(label="Array Paths", value=array_path_count),
+        SummaryCard(label="Max Depth", value=max_depth)
     ])
 
     return summary
@@ -87,15 +95,22 @@ def generate_report(df: pd.DataFrame, file_name: str):
     obj_path_query = q["obj_path_query" ]
     obj_paths = duckdb.sql(obj_path_query).df()
 
-    tables = [
-        create_table(
-            title="Object Paths",
-            df=obj_paths
-        )
-    ]
+    array_path_query = q["array_paths"]
+    array_paths = duckdb.sql(array_path_query).df()
+
+    obj_path_table = create_table(
+        title="Object Paths",
+        df=obj_paths
+    )
+
+    arry_path_table = create_table(
+        title="Array Paths",
+        df=array_paths
+    )
 
     key_coverage_query = q["key_coverage_query"]
-    
+
+    tables = []
     path_series = obj_paths["Path"]
     for path in path_series:
         query = key_coverage_query.format(path)
@@ -113,7 +128,9 @@ def generate_report(df: pd.DataFrame, file_name: str):
         title="JSON Profile",
         source_file=file_name,
         summary=report_summary,
-        tables=tables
+        array_path_table=arry_path_table,
+        object_path_table=obj_path_table,
+        object_coverage_tables=tables
     )
 
     template = env.get_template("report.html")

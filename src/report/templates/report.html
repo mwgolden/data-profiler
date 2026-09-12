@@ -87,11 +87,17 @@
         {% endfor %}
     </section>
     {% from "table.html" import render_table %}
-    {% for table in report.tables %}
+    
     <section class="table-section">
+        {{ render_table(report.array_path_table.title, report.array_path_table.headers, report.array_path_table.rows)}}
+
+        {{ render_table(report.object_path_table.title, report.object_path_table.headers, report.object_path_table.rows)}}
+
+        {% for table in report.object_coverage_tables %}
         {{ render_table(table.title, table.headers, table.rows) }}
+        {% endfor %}
     </section>
-    {% endfor %}
+    
 </div>
 
 </body>
