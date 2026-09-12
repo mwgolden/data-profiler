@@ -1,12 +1,11 @@
 report_queries = {
-    "obj_path_query" : """select path as Path, count(1) as Count 
+    "obj_path_query" : """select path as Path, count(1) as Occurrences 
                             from df where json_type = 'object'
                             group by path, object_depth
                             order by object_depth, Path;""",
     "key_coverage_query": """select 
                             source_key, 
                             count(*) cnt,
-                            t.tot,
                             round(100.0 * count(*) / t.tot, 2) as pct_coverage
                         from df
                         cross join (

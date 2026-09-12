@@ -101,6 +101,7 @@ def profile_string(key: str, data: str, node: JsonNode, source_array_index: int 
 
     parent_path = node.path
     obj_path = node.path + "." + key if key else node.path
+    json_depth = node.json_depth + 1
 
     instance_path, instance_parent_path = scalar_instance_paths(key, node, source_array_index)
 
@@ -119,6 +120,7 @@ def profile_string(key: str, data: str, node: JsonNode, source_array_index: int 
 
     return JsonNode(
         json_type=JsonType.STRING,
+        json_depth=json_depth,
         source_key=key,
         path=obj_path,
         parent_path=parent_path,
@@ -145,11 +147,13 @@ def profile_number(key: str, data: int|float, node: JsonNode, source_array_index
 
     parent_path = node.path
     obj_path = node.path + "." + key if key else node.path
+    json_depth = node.json_depth + 1
 
     instance_path, instance_parent_path = scalar_instance_paths(key, node, source_array_index)
 
     return JsonNode(
         json_type=JsonType.NUMBER,
+        json_depth=json_depth,
         source_key=key,
         source_value=data,
         python_datatype=type(data).__name__,
@@ -165,11 +169,13 @@ def profile_bool(key: str, data: bool, node: JsonNode, source_array_index: int |
 
     parent_path = node.path
     obj_path = node.path + "." + key if key else node.path
+    json_depth = node.json_depth + 1
 
     instance_path, instance_parent_path = scalar_instance_paths(key, node, source_array_index)
 
     return JsonNode(
         json_type=JsonType.BOOL,
+        json_depth=json_depth,
         source_key=key,
         source_value=data,
         python_datatype=type(data).__name__,
@@ -185,11 +191,13 @@ def profile_null(key: str, data, node: JsonNode, source_array_index: int | None)
 
     parent_path = node.path
     obj_path = node.path + "." + key if key else node.path
+    json_depth = node.json_depth + 1
 
     instance_path, instance_parent_path = scalar_instance_paths(key, node, source_array_index)
 
     return JsonNode(
         json_type=JsonType.NULL,
+        json_depth=json_depth,
         source_key=key,
         source_value=data,
         path=obj_path,
@@ -216,12 +224,15 @@ def profile_array(key: str, data: list, options: ProfileOptions, node: JsonNode)
 
     obj_depth = node.object_depth # arrays inherit the current depth; using object nesting depth instead of generic tree depth
 
+    json_depth = node.json_depth
+
     sampling_strategy = options.sampling_options.sampling_strategy
 
     sample_indexes = sampling_strategy.sample(size=len(data))
 
     profile = JsonNode(
         json_type=JsonType.ARRAY,
+        json_depth=json_depth,
         source_key=key,
         array_length=len(data),
         sample_array_length=len(sample_indexes),
@@ -253,6 +264,7 @@ def profile_object(key: str, data: dict, options: ProfileOptions, node: JsonNode
     parent_path = node.path
     obj_path = node.path + "." + key if key else node.path
     obj_depth = node.object_depth + 1
+    json_depth = node.json_depth + 1
 
     if source_array_index is not None:
         # This is an element of an array
@@ -273,6 +285,7 @@ def profile_object(key: str, data: dict, options: ProfileOptions, node: JsonNode
         
     profile = JsonNode(
         json_type=JsonType.OBJECT,
+        json_depth=json_depth,
         source_key=key,
         keys=list(data.keys()),
         object_depth=obj_depth,
@@ -308,7 +321,8 @@ def profile_json(data: Any, options: ProfileOptions) -> JsonNode:
     profile = JsonNode(
         json_type=JsonType.ROOT,
         path="$",
-        object_depth=0
+        object_depth=0,
+        json_depth=0
     )
 
     if map_object_type(data) == JsonType.OBJECT:

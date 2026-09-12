@@ -17,6 +17,7 @@ class ProfileOptions:
 class JsonNode:
     # common attributes
     json_type: JsonType
+    json_depth: int
     source_key: str|None = None
     source_value: Any|None = None
     python_datatype: str|None = None
@@ -89,6 +90,7 @@ class JsonNode:
         def visit_node(node: JsonNode):           
             d = dict()
             d["json_type"] = node.json_type.value
+            d["json_depth"] = node.json_depth
             d["source_key"] = node.source_key
             d["source_value"] = node.source_value
             d["python_datatype"] = node.python_datatype
