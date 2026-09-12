@@ -52,6 +52,7 @@ def json_profiler(args: argparse.Namespace):
     df.to_csv(output_path / "exploded_json.csv", index=False)
 
 
+
 def main():
     parser = argparse.ArgumentParser(prog="profile")
 

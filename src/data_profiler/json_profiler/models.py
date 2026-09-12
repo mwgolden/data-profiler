@@ -17,6 +17,7 @@ class ProfileOptions:
 class JsonNode:
     # common attributes
     json_type: JsonType
+    json_depth: int
     source_key: str|None = None
     source_value: Any|None = None
     python_datatype: str|None = None
@@ -45,7 +46,7 @@ class JsonNode:
 
     # object attributes
     keys: list[str]|None = None
-    depth: int|None = None
+    object_depth: int|None = None
 
     def to_dict(self):
         d = dict()
@@ -56,7 +57,7 @@ class JsonNode:
 
         if self.json_type == JsonType.OBJECT:
             d["keys"] = self.keys
-            d["depth"] = self.depth
+            d["object_depth"] = self.object_depth
 
         if self.json_type == JsonType.ARRAY:
             d["array_length"] = self.array_length
@@ -89,6 +90,8 @@ class JsonNode:
         def visit_node(node: JsonNode):           
             d = dict()
             d["json_type"] = node.json_type.value
+            d["json_depth"] = node.json_depth
+            d["source_key"] = node.source_key
             d["source_value"] = node.source_value
             d["python_datatype"] = node.python_datatype
             d["parent_path"] = node.parent_path
@@ -96,7 +99,7 @@ class JsonNode:
             d["instance_path"] = node.instance_path
             d["instance_parent_path"] = node.instance_parent_path
             d["keys"] = node.keys
-            d["depth"] = node.depth
+            d["object_depth"] = node.object_depth
             d["array_length"] = node.array_length
             d["sample_array_length"] = node.sample_array_length
             d["str_length"] = node.str_length
